@@ -7,7 +7,7 @@ from itertools import cycle
 from curses_tools import draw_frame, read_controls, get_frame_size
 
 
-TIC_TIMEOUT = 0.05
+TIC_TIMEOUT = 0.1
 MIN_ROW = 10
 MIN_COL = 20
 BORDER = 5
@@ -15,6 +15,7 @@ ROCKET_FRAMES = [
     'frames/rocket_frame_1.txt', 
     'frames/rocket_frame_2.txt'
 ]
+STARS_CNT = 20
 
 
 async def animate_spaceship(canvas, row, column, frames):
@@ -51,7 +52,7 @@ async def animate_spaceship(canvas, row, column, frames):
 async def blink(canvas, row, column, symbol):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(3):
+        for _ in range(5):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_NORMAL)
@@ -59,7 +60,7 @@ async def blink(canvas, row, column, symbol):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(2):
+        for _ in range(3):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
@@ -140,7 +141,7 @@ def draw_fire(canvas):
         if len(coroutines) == 0:
             break
         canvas.refresh()
-        time.sleep(0)
+        
     time.sleep(10)
 
 
@@ -149,11 +150,10 @@ def draw(canvas):
     curses.curs_set(False)
     canvas.nodelay(True)
     
-    stars_cnt = 50
     coroutines = []
     
     # stars coroutines
-    for i in range(stars_cnt):
+    for i in range(STARS_CNT):
         coroutines.append(
             blink(
                 canvas, 
@@ -187,7 +187,7 @@ def draw(canvas):
             break
         
         try:
-            coroutines[random.randint(0, stars_cnt) - 1].send(None)
+            coroutines[random.randint(0, STARS_CNT) - 1].send(None)
         except StopIteration:
             coroutines.remove(corutine)
         if len(coroutines) == 0:
