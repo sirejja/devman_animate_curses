@@ -10,7 +10,7 @@ from curses_tools import draw_frame, read_controls, get_frame_size
 TIC_TIMEOUT = 0.1
 MIN_ROW = 10
 MIN_COL = 20
-BORDER = 5
+BORDER = 1
 ROCKET_FRAMES = [
     'frames/rocket_frame_1.txt', 
     'frames/rocket_frame_2.txt'
@@ -26,23 +26,30 @@ async def animate_spaceship(canvas, row, column, frames):
     while True:
         for item in cycle(frames):
             rows_direction, cols_direction, space = read_controls(canvas)
-            row += rows_direction
-            column += cols_direction
+            mod_row = row + rows_direction
+            mod_column = column + cols_direction
             
-            # fly down processing
-            if row + rows_direction - BORDER>= max_row + row_size:
-                row = min_row - row_size + BORDER
-            # flight right processing
-            if column + cols_direction - BORDER>= max_col + col_size:
-                column = min_col - col_size + BORDER
-            # fly up processing
-            if row + rows_direction + BORDER<= min_row - row_size:
-                row = max_row + row_size - BORDER
-            # flight left processing
-            if column + cols_direction + BORDER<= min_col - col_size:
-                column = max_col + col_size - BORDER
-            draw_frame(canvas, row, column, item)
+            # # Through wall processing
+            # # fly down processing
+            # if row + rows_direction - BORDER>= max_row + row_size:
+            #     row = min_row - row_size + BORDER
+            # # flight right processing
+            # if column + cols_direction - BORDER>= max_col + col_size:
+            #     column = min_col - col_size + BORDER
+            # # fly up processing
+            # if row + rows_direction + BORDER<= min_row - row_size:
+            #     row = max_row + row_size - BORDER
+            # # flight left processing
+            # if column + cols_direction + BORDER<= min_col - col_size:
+            #     column = max_col + col_size - BORDER
+            # draw_frame(canvas, row, column, item)
 
+            if BORDER <= mod_row <= max_row - row_size - BORDER:
+                row = mod_row
+            if BORDER <= mod_column <= max_col - col_size - BORDER:
+                column = mod_column
+
+            draw_frame(canvas, row, column, item)
             await asyncio.sleep(0)
             draw_frame(
                 canvas, row, column, item, negative=True
