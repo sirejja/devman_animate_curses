@@ -38,8 +38,18 @@ async def animate_spaceship(canvas, row, column, frames):
 
             if BORDER <= mod_row <= max_row - row_size - BORDER:
                 row = mod_row
+            if mod_row >= max_row - row_size - BORDER:
+                row = max_row - row_size - BORDER
+            if mod_row <= BORDER:
+                row = BORDER
+
             if BORDER <= mod_column <= max_col - col_size - BORDER:
                 column = mod_column
+            if mod_column >= max_col - col_size - BORDER:
+                column = max_col - col_size - BORDER
+            if mod_column <= BORDER:
+                column = BORDER
+            
 
             draw_frame(canvas, row, column, item)
             await asyncio.sleep(0)
