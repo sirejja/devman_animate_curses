@@ -7,7 +7,7 @@ from itertools import cycle
 from curses_tools import draw_frame, read_controls, get_frame_size
 
 
-TIC_TIMEOUT = 0.1
+TIC_TIMEOUT = 0.01
 MIN_ROW = 10
 MIN_COL = 20
 BORDER = 1
@@ -100,30 +100,26 @@ def draw(canvas):
             )
         )
     # rocket coroutine
-    coroutine_rocket = animate_spaceship(
-        canvas, 
-        canvas.getmaxyx()[0]/2, 
-        canvas.getmaxyx()[1]/2, 
-        read_files(
-            ROCKET_FRAMES
+    coroutines.append(
+        animate_spaceship(
+            canvas, 
+            canvas.getmaxyx()[0]/2, 
+            canvas.getmaxyx()[1]/2, 
+            read_files(
+                ROCKET_FRAMES
+            )
         )
     )
-    
-    for corutine in coroutines:
-        corutine.send(None)
+
         
-    while True:
+    for coroutine in cycle(coroutines):
         canvas.border()
         if not coroutines:
             break
-        
         try:
-            coroutines[random.randint(0, STARS_CNT) - 1].send(None)
+            coroutine.send(None)
         except StopIteration:
-            coroutines.remove(corutine)
-        if len(coroutines) == 0:
-            break
-        coroutine_rocket.send(None)
+            coroutines.remove(coroutine)
         canvas.refresh()
         time.sleep(TIC_TIMEOUT)
 
