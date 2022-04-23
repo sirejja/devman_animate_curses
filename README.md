@@ -13,5 +13,5 @@ Requires:
 * Python 3.8 
 
 
-P.S. I tested it on 3.8, but you can try 3.*
+P.S. I've tested it on 3.8, but you can try 3.*
 
