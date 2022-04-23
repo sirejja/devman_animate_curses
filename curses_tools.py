@@ -3,7 +3,7 @@ LEFT_KEY_CODE = 260
 RIGHT_KEY_CODE = 261
 UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
-SPEED = 20
+SPEED = 1
 
 def read_controls(canvas):
     """Read keys pressed and returns tuple witl controls state."""
