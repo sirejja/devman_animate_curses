@@ -111,7 +111,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         obstacle.column = column
         obstacle.row = row
         draw_frame(canvas, row, column, garbage_frame)
-        await sleep(5)
+        await sleep(2)
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         row += speed
     else:
@@ -229,6 +229,7 @@ async def run_spaceship(canvas, row, column, frames):
                 if obstacle.has_collision(
                     row, column
                 ):
+                    canvas.refresh()
                     await show_gameover(canvas)
                     
             await sleep(5)
