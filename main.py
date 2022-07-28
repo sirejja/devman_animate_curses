@@ -18,7 +18,7 @@ ROCKET_FRAMES = [
     'frames/rocket_frame_1.txt', 
     'frames/rocket_frame_2.txt'
 ]
-GARBAGE_FRAMES = [
+GARBAGE_PATHS = [
     'frames/duck.txt', 
     'frames/hubble.txt',
     'frames/lamp.txt',
@@ -26,11 +26,13 @@ GARBAGE_FRAMES = [
     'frames/trash_small.txt',
     'frames/trash_xl.txt'
 ]
+GARBAGE_FRAMES = []
 GAME_OVER='frames/game_over.txt'
 COROUTINES = []
 OBSTACLES = []
 OBSTACLES_IN_LAST_COLLISIONS = []
 YEAR = 1957
+TICS_IN_ONE_YEAR = 50
 PHRASES = {
     1957: "First Sputnik",
     1961: "Gagarin flew!",
@@ -61,9 +63,8 @@ def get_garbage_delay_tics(year):
 
 
 async def increment_year():
-    tics_in_one_year = 50
     while True:
-        await sleep(tics_in_one_year)
+        await sleep(TICS_IN_ONE_YEAR)
         global YEAR
         YEAR += 1
 
@@ -74,7 +75,7 @@ def get_frame(filepath):
      
 
 async def sleep(tics=1):
-    if tics != 0:
+    if tics:
         for _ in range(tics):
             await asyncio.sleep(0)
     else:
@@ -87,10 +88,8 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     Column position will stay same, as specified on start.
     """
 
-    rows_number, columns_number = canvas.getmaxyx()
-
     column = max(column, 0)
-    column = min(column, columns_number - 1)
+    column = min(column, MAX_SCREEN_X - 1)
 
     row_size, column_size = get_frame_size(garbage_frame)
 
@@ -102,7 +101,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         obstacle
     )
     
-    while row < rows_number:
+    while row < MAX_SCREEN_Y:
         if obstacle in OBSTACLES_IN_LAST_COLLISIONS:
             OBSTACLES.remove(obstacle)
             OBSTACLES_IN_LAST_COLLISIONS.remove(obstacle)
@@ -143,8 +142,7 @@ async def fire(
 
     symbol = '-' if columns_speed else '|'
 
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
+    max_row, max_column = MAX_SCREEN_Y - 1, MAX_SCREEN_X - 1
 
     curses.beep()
     
@@ -163,27 +161,25 @@ async def fire(
         column += columns_speed
 
 
-async def show_gameover(canvas):
-    gameover_frame = get_frame(GAME_OVER)
+async def show_gameover(canvas, gameover_frame):
     row_size, column_size = get_frame_size(gameover_frame)
     while True:
         draw_frame(
             canvas,
-            canvas.getmaxyx()[0]/2 - row_size/2,
-            canvas.getmaxyx()[1]/2 - column_size/2,
+            MAX_SCREEN_Y / 2 - row_size/2,
+            MAX_SCREEN_X / 2 - column_size/2,
             gameover_frame
         )
         await asyncio.sleep(0)
 
 
-async def run_spaceship(canvas, row, column, frames):
+async def run_spaceship(canvas, row, column, frames, gameover_frame):
     """
     Rocket flame coroutine.
     Fire coroutine.
     Rocket control coroutine with speed processing.
     """
     row_size, col_size = get_frame_size(frames[0])
-    max_row, max_col = canvas.getmaxyx()
     row_speed, column_speed = 0, 0
     while True:
         for item in cycle(frames):
@@ -201,17 +197,17 @@ async def run_spaceship(canvas, row, column, frames):
             new_row = row + rows_direction + row_speed
             new_column = column + columns_direction + column_speed
 
-            if BORDER <= new_row <= max_row - row_size - BORDER:
+            if BORDER <= new_row <= MAX_SCREEN_X - row_size - BORDER:
                 row = new_row
-            if new_row >= max_row - row_size - BORDER:
-                row = max_row - row_size - BORDER
+            if new_row >= MAX_SCREEN_X - row_size - BORDER:
+                row = MAX_SCREEN_X - row_size - BORDER
             if new_row <= BORDER:
                 row = BORDER
 
-            if BORDER <= new_column <= max_col - col_size - BORDER:
+            if BORDER <= new_column <= MAX_SCREEN_X - col_size - BORDER:
                 column = new_column
-            if new_column >= max_col - col_size - BORDER:
-                column = max_col - col_size - BORDER
+            if new_column >= MAX_SCREEN_X - col_size - BORDER:
+                column = MAX_SCREEN_X - col_size - BORDER
             if new_column <= BORDER:
                 column = BORDER
 
@@ -230,7 +226,7 @@ async def run_spaceship(canvas, row, column, frames):
                     row, column
                 ):
                     canvas.refresh()
-                    await show_gameover(canvas)
+                    await show_gameover(canvas, gameover_frame)
                     
             await sleep(5)
             draw_frame(
@@ -261,20 +257,14 @@ async def fill_orbit_with_garbage(canvas):
     while True:
         delay = get_garbage_delay_tics(YEAR)
         if delay:
-            random_frame = GARBAGE_FRAMES[
-                random.randint(
-                    a=0,
-                    b=len(GARBAGE_FRAMES) - 1
-                )
-            ]
             COROUTINES.append(
                 fly_garbage(
                     canvas,
                     column=random.randint(
                         a=0,
-                        b=canvas.getmaxyx()[1] - 1
+                        b=MAX_SCREEN_X - 1
                     ),
-                    garbage_frame=get_frame(random_frame)
+                    garbage_frame=random.choice(GARBAGE_FRAMES)
                 )
             )
             await sleep(delay) 
@@ -283,25 +273,18 @@ async def fill_orbit_with_garbage(canvas):
 
 
 async def show_year(canvas):
-    rows_number, columns_number = canvas.getmaxyx()
     offset = 2
     while True:
         try:
             text = f'{YEAR}: {PHRASES[YEAR]}'
         except KeyError:
             text = str(YEAR)
-        draw_frame(canvas, offset, columns_number - len(text) - offset, text)
+        draw_frame(canvas, offset, MAX_SCREEN_X - len(text) - offset, text)
         await asyncio.sleep(0)
-        draw_frame(canvas, offset, columns_number - len(text) - offset, text, negative=True)
+        draw_frame(canvas, offset, MAX_SCREEN_X - len(text) - offset, text, negative=True)
 
 
-def draw(canvas):
-    """
-    Handmade event-loop.
-    """
-    curses.curs_set(False)
-    canvas.nodelay(True)
-    
+def coroutines_init(canvas):
     # stars coroutines
     for i in range(STARS_CNT):
         COROUTINES.append(
@@ -309,11 +292,11 @@ def draw(canvas):
                 canvas, 
                 random.randint(
                     0,
-                    canvas.getmaxyx()[0] - 1
+                    MAX_SCREEN_Y - 1
                 ),
                 random.randint(
                     0,
-                    canvas.getmaxyx()[1] - 1
+                    MAX_SCREEN_X - 1
                 ),
                 random.choice('+*.:')
             )
@@ -326,14 +309,29 @@ def draw(canvas):
     COROUTINES.append(
         run_spaceship(
             canvas, 
-            canvas.getmaxyx()[0]/2, 
-            canvas.getmaxyx()[1]/2, 
-            [get_frame(x) for x in ROCKET_FRAMES]
+            MAX_SCREEN_Y / 2, 
+            MAX_SCREEN_X / 2, 
+            [get_frame(x) for x in ROCKET_FRAMES],
+            get_frame(GAME_OVER)
         )
     )
 
     COROUTINES.append(show_year(canvas))
     COROUTINES.append(increment_year())
+
+
+def draw(canvas):
+    """
+    Handmade event-loop.
+    """
+    curses.curs_set(False)
+    canvas.nodelay(True)
+    global MAX_SCREEN_X
+    global MAX_SCREEN_Y
+    MAX_SCREEN_Y, MAX_SCREEN_X = canvas.getmaxyx()
+    GARBAGE_FRAMES.extend([get_frame(x) for x in GARBAGE_PATHS])
+
+    coroutines_init(canvas)
 
     while True:
         for coroutine in COROUTINES.copy():
@@ -344,8 +342,8 @@ def draw(canvas):
                 coroutine.send(None)
             except StopIteration:
                 COROUTINES.remove(coroutine)
-            canvas.refresh()
             time.sleep(TIC_TIMEOUT)
+        canvas.refresh()
 
 
 def main():
