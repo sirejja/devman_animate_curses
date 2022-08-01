@@ -9,7 +9,7 @@ from physics import update_speed
 from explosion import explode
 
 
-TIC_TIMEOUT = 0.0005
+TIC_TIMEOUT = 0.015
 MIN_ROW = 10
 MIN_COL = 20
 BORDER = 1
@@ -181,57 +181,56 @@ async def run_spaceship(canvas, row, column, frames, gameover_frame):
     """
     row_size, col_size = get_frame_size(frames[0])
     row_speed, column_speed = 0, 0
-    while True:
-        for item in cycle(frames):
-            rows_direction, columns_direction, space = read_controls(canvas)
+    
+    for frame in cycle(frames):
+        rows_direction, columns_direction, space = read_controls(canvas)
 
-            row_speed, column_speed = update_speed(
-                row_speed=row_speed,
-                column_speed=column_speed,
-                rows_direction=rows_direction,
-                columns_direction=columns_direction,
-                row_speed_limit=5,
-                column_speed_limit=5
-            )
+        row_speed, column_speed = update_speed(
+            row_speed=row_speed,
+            column_speed=column_speed,
+            rows_direction=rows_direction,
+            columns_direction=columns_direction,
+            row_speed_limit=5,
+            column_speed_limit=5
+        )
 
-            new_row = row + rows_direction + row_speed
-            new_column = column + columns_direction + column_speed
+        new_row = row + rows_direction + row_speed
+        new_column = column + columns_direction + column_speed
 
-            if BORDER <= new_row <= MAX_SCREEN_X - row_size - BORDER:
-                row = new_row
-            if new_row >= MAX_SCREEN_X - row_size - BORDER:
-                row = MAX_SCREEN_X - row_size - BORDER
-            if new_row <= BORDER:
-                row = BORDER
+        if BORDER <= new_row <= MAX_SCREEN_X - row_size - BORDER:
+            row = new_row
+        if new_row >= MAX_SCREEN_X - row_size - BORDER:
+            row = MAX_SCREEN_X - row_size - BORDER
+        if new_row <= BORDER:
+            row = BORDER
 
-            if BORDER <= new_column <= MAX_SCREEN_X - col_size - BORDER:
-                column = new_column
-            if new_column >= MAX_SCREEN_X - col_size - BORDER:
-                column = MAX_SCREEN_X - col_size - BORDER
-            if new_column <= BORDER:
-                column = BORDER
+        if BORDER <= new_column <= MAX_SCREEN_X - col_size - BORDER:
+            column = new_column
+        if new_column >= MAX_SCREEN_X - col_size - BORDER:
+            column = MAX_SCREEN_X - col_size - BORDER
+        if new_column <= BORDER:
+            column = BORDER
 
-            # shooting animation coroutine
-            if YEAR >= 2020 and space:
-                COROUTINES.append(
-                    fire(
-                        canvas,
-                        start_row=row, 
-                        start_column=column,
-                    )
+        # shooting animation coroutine
+        if YEAR >= 2020 and space:
+            COROUTINES.append(
+                fire(
+                    canvas,
+                    start_row=row, 
+                    start_column=column,
                 )
-            draw_frame(canvas, row, column, item)
-            for obstacle in OBSTACLES:
-                if obstacle.has_collision(
-                    row, column
-                ):
-                    canvas.refresh()
-                    await show_gameover(canvas, gameover_frame)
-                    
-            await sleep(5)
-            draw_frame(
-                canvas, row, column, item, negative=True
             )
+        draw_frame(canvas, row, column, frame)
+        for obstacle in OBSTACLES:
+            if obstacle.has_collision(
+                row, column
+            ):
+                await show_gameover(canvas, gameover_frame)
+                
+        await sleep(1)
+        draw_frame(
+            canvas, row, column, frame, negative=True
+        )
 
 
 async def blink(canvas, row, column, symbol):
@@ -275,28 +274,27 @@ async def fill_orbit_with_garbage(canvas):
 async def show_year(canvas):
     offset = 2
     while True:
-        try:
-            text = f'{YEAR}: {PHRASES[YEAR]}'
-        except KeyError:
-            text = str(YEAR)
+        text = f'{YEAR}'
+        if PHRASES.get(YEAR):
+            text += f': {PHRASES.get(YEAR)}'
         draw_frame(canvas, offset, MAX_SCREEN_X - len(text) - offset, text)
         await asyncio.sleep(0)
         draw_frame(canvas, offset, MAX_SCREEN_X - len(text) - offset, text, negative=True)
 
 
-def coroutines_init(canvas):
+def init_coroutines(canvas):
     # stars coroutines
-    for i in range(STARS_CNT):
+    for _ in range(STARS_CNT):
         COROUTINES.append(
             blink(
                 canvas, 
                 random.randint(
                     0,
-                    MAX_SCREEN_Y - 1
+                    MAX_SCREEN_Y
                 ),
                 random.randint(
                     0,
-                    MAX_SCREEN_X - 1
+                    MAX_SCREEN_X
                 ),
                 random.choice('+*.:')
             )
@@ -311,7 +309,7 @@ def coroutines_init(canvas):
             canvas, 
             MAX_SCREEN_Y / 2, 
             MAX_SCREEN_X / 2, 
-            [get_frame(x) for x in ROCKET_FRAMES],
+            [get_frame(rocket_frame) for rocket_frame in ROCKET_FRAMES],
             get_frame(GAME_OVER)
         )
     )
@@ -329,9 +327,12 @@ def draw(canvas):
     global MAX_SCREEN_X
     global MAX_SCREEN_Y
     MAX_SCREEN_Y, MAX_SCREEN_X = canvas.getmaxyx()
+    # we should decrease virtual screen size to exclude cases, when random stars appear out of screen.
+    # for screens with little dimensions
+    MAX_SCREEN_Y, MAX_SCREEN_X = MAX_SCREEN_Y - 1, MAX_SCREEN_X - 1
     GARBAGE_FRAMES.extend([get_frame(x) for x in GARBAGE_PATHS])
 
-    coroutines_init(canvas)
+    init_coroutines(canvas)
 
     while True:
         for coroutine in COROUTINES.copy():
@@ -342,8 +343,9 @@ def draw(canvas):
                 coroutine.send(None)
             except StopIteration:
                 COROUTINES.remove(coroutine)
-            time.sleep(TIC_TIMEOUT)
         canvas.refresh()
+        time.sleep(TIC_TIMEOUT)
+        
 
 
 def main():
