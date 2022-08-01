@@ -327,9 +327,11 @@ def draw(canvas):
     global MAX_SCREEN_X
     global MAX_SCREEN_Y
     MAX_SCREEN_Y, MAX_SCREEN_X = canvas.getmaxyx()
-    # we should decrease virtual screen size to exclude cases, when random stars appear out of screen.
+    # we should decrease virtual screen size to exclude cases, 
+    # when random stars appear out of screen.
     # for screens with little dimensions
     MAX_SCREEN_Y, MAX_SCREEN_X = MAX_SCREEN_Y - 1, MAX_SCREEN_X - 1
+    
     GARBAGE_FRAMES.extend([get_frame(x) for x in GARBAGE_PATHS])
 
     init_coroutines(canvas)
