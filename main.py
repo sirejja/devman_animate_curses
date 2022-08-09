@@ -72,14 +72,11 @@ async def increment_year():
 def get_frame(filepath):
     with open(filepath, "r") as file:
         return file.read()
-     
 
 async def sleep(tics=1):
     if tics:
         for _ in range(tics):
             await asyncio.sleep(0)
-    else:
-        await asyncio.sleep(0)
 
 
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
