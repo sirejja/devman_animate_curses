@@ -74,9 +74,8 @@ def get_frame(filepath):
         return file.read()
 
 async def sleep(tics=1):
-    if tics:
-        for _ in range(tics):
-            await asyncio.sleep(0)
+    for _ in range(tics):
+        await asyncio.sleep(0)
 
 
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
